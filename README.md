@@ -14,7 +14,7 @@ Build and compare five supervised classification models to identify fraudulent c
 - A stratified 80/20 split was made. To keep training and the interactive demo practical, the saved models were fitted on a stratified 60,000-row subset of the training partition and evaluated on a stratified 20,000-row holdout sample. The same holdout file is used for all models.
 
 ## c. GitHub Repository Link
-https://github.com/jalamkhan78-ai/ml-fraud-detection-dashboard/tree/main
+https://github.com/jalamkhan78-ai/ml-fraud-detection-dashboard
 
 ## d. Models Used and Evaluation
 All five models use the same input features and the same held-out test rows. StandardScaler is included in the pipelines for Logistic Regression, KNN, Gaussian Naive Bayes and Linear SVM. The Decision Tree is trained without scaling. Class weighting is used for Logistic Regression, Decision Tree and Linear SVM to address class imbalance.
