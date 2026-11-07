@@ -21,10 +21,39 @@ MODEL_FILES = {
 }
 
 st.set_page_config(page_title="Credit Card Fraud Classifier", page_icon="💳", layout="wide")
-st.title("Credit Card Fraud Detection")
-st.write(
-    "Compare five trained classification models on an uploaded labelled CSV. "
-    "The app evaluates the saved models only; it does not retrain them."
+
+st.markdown(
+    """
+    <style>
+    [data-testid="stMetric"] {
+        background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%);
+        border: 1px solid #3b82f6;
+        padding: 14px;
+        border-radius: 12px;
+    }
+    [data-testid="stMetricLabel"], [data-testid="stMetricValue"] {
+        color: white;
+    }
+    .hero {
+        padding: 1.4rem 1.6rem;
+        border-radius: 16px;
+        background: linear-gradient(120deg, #0f172a, #1d4ed8);
+        color: white;
+        margin-bottom: 1rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
+    <div class="hero">
+        <h1>💳 Credit Card Fraud Detection</h1>
+        <p>Compare five trained classifiers and explore their fraud-detection performance.</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
 @st.cache_resource
@@ -32,8 +61,22 @@ def load_models():
     return {name: joblib.load(MODEL_DIR / filename) for name, filename in MODEL_FILES.items()}
 
 models = load_models()
-model_name = st.selectbox("Choose a classification model", list(MODEL_FILES.keys()))
-uploaded = st.file_uploader("Upload test data (CSV)", type=["csv"])
+
+with st.sidebar:
+    st.header("Controls")
+    model_name = st.selectbox("Choose a classification model", list(MODEL_FILES.keys()))
+    uploaded = st.file_uploader("Upload labelled test data", type=["csv"])
+    use_sample = st.checkbox("Use included test_data.csv", value=uploaded is None)
+    st.divider()
+    st.caption("Input requirements")
+    st.info("30 numeric feature columns plus `Class` (0 = genuine, 1 = fraud).")
+
+if use_sample and uploaded is None:
+    sample_path = BASE_DIR / "test_data.csv"
+    if sample_path.exists():
+        uploaded = sample_path
+    else:
+        st.warning("The included test_data.csv file was not found. Upload a CSV to continue.")
 
 st.caption("The CSV must contain the 30 model input columns and a target column named Class (0 = genuine, 1 = fraud).")
 if uploaded is not None:
@@ -81,6 +124,10 @@ if uploaded is not None:
     mcc = matthews_corrcoef(y, predictions)
 
     st.subheader(f"Evaluation: {model_name}")
+    genuine_count = int((y == 0).sum())
+    fraud_count = int((y == 1).sum())
+    st.caption(f"Analysed {len(data):,} transactions • {fraud_count:,} fraud • {genuine_count:,} genuine")
+
     c1, c2, c3 = st.columns(3)
     c1.metric("Accuracy", f"{accuracy:.4f}")
     c2.metric("AUC", f"{auc:.4f}" if pd.notna(auc) else "N/A")
@@ -90,18 +137,50 @@ if uploaded is not None:
     c5.metric("F1 Score", f"{f1:.4f}")
     c6.metric("MCC", f"{mcc:.4f}")
 
-    st.subheader("Confusion matrix")
-    cm = confusion_matrix(y, predictions, labels=[0, 1])
-    st.dataframe(pd.DataFrame(cm, index=["Actual genuine", "Actual fraud"],
-                              columns=["Predicted genuine", "Predicted fraud"]))
-    st.subheader("Classification report")
-    st.code(classification_report(y, predictions, target_names=["Genuine (0)", "Fraud (1)"], zero_division=0))
     preview = data.copy()
     preview["Predicted_Class"] = predictions
-    st.subheader("Predictions preview")
-    st.dataframe(preview.head(100), use_container_width=True)
-    st.download_button("Download predictions CSV", preview.to_csv(index=False).encode("utf-8"),
-                       file_name="creditcard_predictions.csv", mime="text/csv")
+    preview["Prediction_Label"] = preview["Predicted_Class"].map({0: "Genuine", 1: "Fraud"})
+
+    tab_summary, tab_matrix, tab_predictions = st.tabs(
+        ["📊 Summary", "🔲 Confusion matrix", "🔎 Predictions"]
+    )
+    with tab_summary:
+        st.subheader("Classification report")
+        report = pd.DataFrame(
+            classification_report(
+                y, predictions, target_names=["Genuine (0)", "Fraud (1)"],
+                zero_division=0, output_dict=True
+            )
+        ).T
+        st.dataframe(report.style.format("{:.4f}"), use_container_width=True)
+        st.progress(float(recall), text=f"Fraud recall: {recall:.1%}")
+        st.progress(float(precision), text=f"Fraud precision: {precision:.1%}")
+
+    with tab_matrix:
+        cm = confusion_matrix(y, predictions, labels=[0, 1])
+        matrix = pd.DataFrame(
+            cm, index=["Actual genuine", "Actual fraud"],
+            columns=["Predicted genuine", "Predicted fraud"],
+        )
+        st.dataframe(matrix.style.background_gradient(cmap="Blues"), use_container_width=True)
+        st.caption("Rows represent actual classes; columns represent model predictions.")
+
+    with tab_predictions:
+        prediction_filter = st.multiselect(
+            "Show prediction classes",
+            options=["Genuine", "Fraud"],
+            default=["Genuine", "Fraud"],
+        )
+        filtered_preview = preview[preview["Prediction_Label"].isin(prediction_filter)]
+        st.caption(f"Showing {len(filtered_preview):,} of {len(preview):,} transactions")
+        st.dataframe(filtered_preview.head(100), use_container_width=True)
+        st.download_button(
+            "⬇️ Download predictions CSV",
+            preview.to_csv(index=False).encode("utf-8"),
+            file_name="creditcard_predictions.csv",
+            mime="text/csv",
+        )
 else:
-    st.info("Upload the included test_data.csv to view evaluation metrics and the confusion matrix.")
-    st.write("Available models:", ", ".join(MODEL_FILES.keys()))
+    st.info("Upload a labelled CSV or select the included test_data.csv to view evaluation metrics.")
+    st.subheader("Available models")
+    st.write(" • ".join(MODEL_FILES.keys()))
