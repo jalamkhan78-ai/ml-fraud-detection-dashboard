@@ -130,12 +130,12 @@ if uploaded is not None:
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Accuracy", f"{accuracy:.4f}")
-    c2.metric("AUC", f"{auc:.4f}" if pd.notna(auc) else "N/A")
+    c2.metric("AUC Score", f"{auc:.4f}" if pd.notna(auc) else "N/A")
     c3.metric("Precision", f"{precision:.4f}")
     c4, c5, c6 = st.columns(3)
     c4.metric("Recall", f"{recall:.4f}")
     c5.metric("F1 Score", f"{f1:.4f}")
-    c6.metric("MCC", f"{mcc:.4f}")
+    c6.metric("MCC Score", f"{mcc:.4f}")
 
     preview = data.copy()
     preview["Predicted_Class"] = predictions
