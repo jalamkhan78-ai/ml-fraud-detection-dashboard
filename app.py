@@ -20,6 +20,14 @@ MODEL_FILES = {
     "Support Vector Machine": "svm.joblib",
 }
 
+MODEL_ICONS = {
+    "Logistic Regression": "📉",
+    "Decision Tree": "🌳",
+    "K-Nearest Neighbors": "👥",
+    "Gaussian Naive Bayes": "🧠",
+    "Support Vector Machine": "🛡️",
+}
+
 st.set_page_config(page_title="Credit Card Fraud Classifier", page_icon="💳", layout="wide")
 
 st.markdown(
@@ -37,7 +45,7 @@ st.markdown(
     .hero {
         padding: 1.4rem 1.6rem;
         border-radius: 16px;
-        background: linear-gradient(120deg, #0f172a, #1d4ed8);
+        background: linear-gradient(120deg, #0f2929, #0f766e);
         color: white;
         margin-bottom: 1rem;
     }
@@ -64,11 +72,15 @@ models = load_models()
 
 with st.sidebar:
     st.header("Controls")
-    model_name = st.selectbox("Choose a classification model", list(MODEL_FILES.keys()))
+    model_name = st.selectbox(
+        "Choose a classification model",
+        list(MODEL_FILES.keys()),
+        format_func=lambda name: f"{MODEL_ICONS[name]} {name}",
+    )
     uploaded = st.file_uploader("Upload labelled test data", type=["csv"])
     use_sample = st.checkbox("Use included test_data.csv", value=uploaded is None)
     st.divider()
-    st.caption("Input requirements")
+    st.caption("Input Requirements")
     st.info("30 numeric feature columns plus `Class` (0 = genuine, 1 = fraud).")
 
 if use_sample and uploaded is None:
@@ -123,19 +135,19 @@ if uploaded is not None:
     f1 = f1_score(y, predictions, zero_division=0)
     mcc = matthews_corrcoef(y, predictions)
 
-    st.subheader(f"Evaluation: {model_name}")
+    st.subheader(f"Evaluation: {MODEL_ICONS[model_name]} {model_name}")
     genuine_count = int((y == 0).sum())
     fraud_count = int((y == 1).sum())
     st.caption(f"Analysed {len(data):,} transactions • {fraud_count:,} fraud • {genuine_count:,} genuine")
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("Accuracy", f"{accuracy:.4f}")
-    c2.metric("AUC Score", f"{auc:.4f}" if pd.notna(auc) else "N/A")
-    c3.metric("Precision", f"{precision:.4f}")
+    c1.metric("🎯 Accuracy", f"{accuracy:.4f}")
+    c2.metric("📈 AUC Score", f"{auc:.4f}" if pd.notna(auc) else "N/A")
+    c3.metric("🔍 Precision", f"{precision:.4f}")
     c4, c5, c6 = st.columns(3)
-    c4.metric("Recall", f"{recall:.4f}")
-    c5.metric("F1 Score", f"{f1:.4f}")
-    c6.metric("MCC Score", f"{mcc:.4f}")
+    c4.metric("🚨 Recall", f"{recall:.4f}")
+    c5.metric("⚖️ F1 Score", f"{f1:.4f}")
+    c6.metric("🧮 MCC Score", f"{mcc:.4f}")
 
     preview = data.copy()
     preview["Predicted_Class"] = predictions
@@ -183,4 +195,4 @@ if uploaded is not None:
 else:
     st.info("Upload a labelled CSV or select the included test_data.csv to view evaluation metrics.")
     st.subheader("Available models")
-    st.write(" • ".join(MODEL_FILES.keys()))
+    st.write(" • ".join(f"{MODEL_ICONS[name]} {name}" for name in MODEL_FILES))
