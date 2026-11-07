@@ -34,8 +34,8 @@ st.markdown(
     """
     <style>
     [data-testid="stMetric"] {
-        background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%);
-        border: 1px solid #3b82f6;
+        background: linear-gradient(120deg, #0f2929, #0f766e);
+        border: 1px solid #14b8a6;
         padding: 14px;
         border-radius: 12px;
     }
