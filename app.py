@@ -162,7 +162,7 @@ if uploaded is not None:
             cm, index=["Actual genuine", "Actual fraud"],
             columns=["Predicted genuine", "Predicted fraud"],
         )
-        st.dataframe(matrix.style.background_gradient(cmap="Blues"), use_container_width=True)
+        st.dataframe(matrix, use_container_width=True)
         st.caption("Rows represent actual classes; columns represent model predictions.")
 
     with tab_predictions:
